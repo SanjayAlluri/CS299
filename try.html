@@ -22,8 +22,10 @@
 
 <script>
 
+// ---------- GET TYPE ----------
 let params = new URLSearchParams(window.location.search);
 let type = params.get("type");
+console.log("TYPE =", type); // DEBUG
 
 let nodes = [];
 let links = [];
@@ -58,22 +60,19 @@ if(type === "complete"){
     }
   }
 
-  // ✅ FIXED (NO NaN EVER)
   nodes.forEach(node => {
     let deg = nodes.length - 1;
     node.t = Math.floor(Math.random() * deg) + 1;
-
     if (isNaN(node.t)) node.t = 1;
   });
 }
 
-// TREE (used for both WTSS tree + max activation)
+// TREE (used for both tree + maxtime)
 else{
   for(let i=1;i<nodes.length;i++){
     links.push({source:i,target:Math.floor(Math.random()*i)});
   }
 
-  // enforce t ≤ degree
   nodes.forEach(node => {
     let deg = links.filter(l => l.source===node.id || l.target===node.id).length;
     node.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
@@ -94,7 +93,7 @@ svg.selectAll("line")
   .attr("y2", d=>nodes[d.target].y)
   .attr("stroke","#999");
 
-// NODES (CLICKABLE + COLOR FIX)
+// NODES
 svg.selectAll("circle")
   .data(nodes)
   .enter()
@@ -111,7 +110,7 @@ svg.selectAll("circle")
       .attr("fill", d.selected ? "#1f77b4" : "lightgray");
   });
 
-// LABELS (NO CLICK BLOCKING)
+// LABELS
 svg.selectAll("text")
   .data(nodes)
   .enter()
@@ -174,16 +173,20 @@ function check(){
 
   let ok = nodes.every(node=>node.active);
 
-  // RESULT OUTPUT
+  // ✅ FIXED RESULT DISPLAY
+  let resultText = "";
+
   if(type === "maxtime"){
-    document.getElementById("result").innerText =
-      ok ? `Activated in ${time} steps ⏱️` :
-           "Not fully activated ❌";
+    resultText = ok
+      ? "Activated in " + time + " steps ⏱️"
+      : "Not fully activated ❌";
   } else {
-    document.getElementById("result").innerText =
-      ok ? "All nodes activated ✅" :
-           "Not fully activated ❌";
+    resultText = ok
+      ? "All nodes activated ✅"
+      : "Not fully activated ❌";
   }
+
+  document.getElementById("result").innerText = resultText;
 }
 
 // RESET
