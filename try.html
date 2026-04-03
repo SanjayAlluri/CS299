@@ -29,13 +29,13 @@ let nodes = [];
 let links = [];
 let n = 6;
 
-// TITLE
+// ---------- TITLE ----------
 document.getElementById("title").innerText =
-  type === "complete" ? "Complete Graph" :
+  type === "complete" ? "Complete Graph (WTSS)" :
   type === "tree" ? "Tree (WTSS)" :
   "Max Activation Time (Tree)";
 
-// CREATE NODES
+// ---------- CREATE NODES ----------
 for(let i=0;i<n;i++){
   nodes.push({
     id:i,
@@ -52,25 +52,28 @@ for(let i=0;i<n;i++){
 
 // COMPLETE GRAPH
 if(type === "complete"){
-  for(let i=0;i<n;i++){
-    for(let j=i+1;j<n;j++){
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
       links.push({source:i,target:j});
     }
   }
 
-  // FIXED threshold assignment
+  // ✅ FIXED (NO NaN EVER)
   nodes.forEach(node => {
-    let deg = n - 1;
-    node.t = Math.floor(Math.random()*deg) + 1;
+    let deg = nodes.length - 1;
+    node.t = Math.floor(Math.random() * deg) + 1;
+
+    if (isNaN(node.t)) node.t = 1;
   });
 }
 
-// TREE (for both tree + maxtime)
+// TREE (used for both WTSS tree + max activation)
 else{
-  for(let i=1;i<n;i++){
+  for(let i=1;i<nodes.length;i++){
     links.push({source:i,target:Math.floor(Math.random()*i)});
   }
 
+  // enforce t ≤ degree
   nodes.forEach(node => {
     let deg = links.filter(l => l.source===node.id || l.target===node.id).length;
     node.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
@@ -91,7 +94,7 @@ svg.selectAll("line")
   .attr("y2", d=>nodes[d.target].y)
   .attr("stroke","#999");
 
-// NODES
+// NODES (CLICKABLE + COLOR FIX)
 svg.selectAll("circle")
   .data(nodes)
   .enter()
@@ -103,11 +106,12 @@ svg.selectAll("circle")
   .on("click", function(event,d){
     d.selected = !d.selected;
     d.active = d.selected;
+
     d3.select(this)
       .attr("fill", d.selected ? "#1f77b4" : "lightgray");
   });
 
-// LABELS (FIXED — ALWAYS SHOWS)
+// LABELS (NO CLICK BLOCKING)
 svg.selectAll("text")
   .data(nodes)
   .enter()
@@ -170,7 +174,7 @@ function check(){
 
   let ok = nodes.every(node=>node.active);
 
-  // FIXED OUTPUT
+  // RESULT OUTPUT
   if(type === "maxtime"){
     document.getElementById("result").innerText =
       ok ? `Activated in ${time} steps ⏱️` :
