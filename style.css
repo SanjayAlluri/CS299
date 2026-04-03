@@ -27,10 +27,14 @@ button:hover {
   background: #06285c;
 }
 
-.active {
-  fill: green;
-}
-
 .inactive {
   fill: lightgray;
+}
+
+.selected {
+  fill: #1f77b4; /* blue */
+}
+
+.active {
+  fill: green;
 }
