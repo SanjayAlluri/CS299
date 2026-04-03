@@ -27,29 +27,30 @@ let type = params.get("type");
 
 let nodes = [];
 let links = [];
+let n = 6;
 
 // TITLE
 document.getElementById("title").innerText =
   type === "complete" ? "Complete Graph" :
-  type === "tree" ? "Tree Graph" :
-  "General Graph (Max Activation Time)";
+  type === "tree" ? "Tree (WTSS)" :
+  "Max Activation Time (Tree)";
 
 // CREATE NODES
-let n = 6;
-
 for(let i=0;i<n;i++){
   nodes.push({
     id:i,
     x:Math.random()*600+50,
     y:Math.random()*350+50,
-    t: 1,
+    t:1,
     w: Math.floor(Math.random()*9)+1,
     active:false,
     selected:false
   });
 }
 
-// CREATE GRAPH
+// ---------- GRAPH CREATION ----------
+
+// COMPLETE GRAPH
 if(type === "complete"){
   for(let i=0;i<n;i++){
     for(let j=i+1;j<n;j++){
@@ -57,40 +58,26 @@ if(type === "complete"){
     }
   }
 
-  // threshold ≤ degree (n-1)
-  nodes.forEach(n => {
-    n.t = Math.floor(Math.random()*(n-1))+1;
+  // FIXED threshold assignment
+  nodes.forEach(node => {
+    let deg = n - 1;
+    node.t = Math.floor(Math.random()*deg) + 1;
   });
 }
 
-else if(type === "tree"){
+// TREE (for both tree + maxtime)
+else{
   for(let i=1;i<n;i++){
     links.push({source:i,target:Math.floor(Math.random()*i)});
   }
 
-  // compute degree & enforce threshold
-  nodes.forEach(n => {
-    let deg = links.filter(l => l.source===n.id || l.target===n.id).length;
-    n.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
+  nodes.forEach(node => {
+    let deg = links.filter(l => l.source===node.id || l.target===node.id).length;
+    node.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
   });
 }
 
-else{
-  for(let i=0;i<n;i++){
-    for(let j=i+1;j<n;j++){
-      if(Math.random()<0.4){
-        links.push({source:i,target:j});
-      }
-    }
-  }
-
-  nodes.forEach(n => {
-    let deg = links.filter(l => l.source===n.id || l.target===n.id).length;
-    n.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
-  });
-}
-
-// DRAW
+// ---------- DRAW ----------
 let svg = d3.select("#graph");
 
 // EDGES
@@ -112,17 +99,15 @@ svg.selectAll("circle")
   .attr("cx", d=>d.x)
   .attr("cy", d=>d.y)
   .attr("r", 22)
-  .attr("fill", "lightgray")
+  .attr("fill","lightgray")
   .on("click", function(event,d){
-
     d.selected = !d.selected;
     d.active = d.selected;
-
     d3.select(this)
       .attr("fill", d.selected ? "#1f77b4" : "lightgray");
   });
 
-// LABELS
+// LABELS (FIXED — ALWAYS SHOWS)
 svg.selectAll("text")
   .data(nodes)
   .enter()
@@ -137,20 +122,13 @@ svg.selectAll("text")
       .attr("y", d.y - 5)
       .text(d.id);
 
-    if(type === "general"){
-      t.append("tspan")
-        .attr("x", d.x)
-        .attr("y", d.y + 10)
-        .text(`t=${d.t}`);
-    } else {
-      t.append("tspan")
-        .attr("x", d.x)
-        .attr("y", d.y + 10)
-        .text(`t=${d.t}, w=${d.w}`);
-    }
+    t.append("tspan")
+      .attr("x", d.x)
+      .attr("y", d.y + 10)
+      .text(`t=${d.t}${type !== "maxtime" ? ", w="+d.w : ""}`);
   });
 
-// ACTIVATION
+// ---------- ACTIVATION ----------
 function check(){
 
   let time = 0;
@@ -160,23 +138,23 @@ function check(){
     changed = false;
     let newNodes = [];
 
-    nodes.forEach(n=>{
-      if(n.active) return;
+    nodes.forEach(node=>{
+      if(node.active) return;
 
       let count = 0;
 
       links.forEach(l=>{
-        if(l.source===n.id && nodes[l.target].active) count++;
-        if(l.target===n.id && nodes[l.source].active) count++;
+        if(l.source===node.id && nodes[l.target].active) count++;
+        if(l.target===node.id && nodes[l.source].active) count++;
       });
 
-      if(count >= n.t){
-        newNodes.push(n);
+      if(count >= node.t){
+        newNodes.push(node);
       }
     });
 
     if(newNodes.length > 0){
-      newNodes.forEach(n => n.active = true);
+      newNodes.forEach(node => node.active = true);
       changed = true;
       time++;
     }
@@ -190,11 +168,12 @@ function check(){
       return "lightgray";
     });
 
-  let ok = nodes.every(n=>n.active);
+  let ok = nodes.every(node=>node.active);
 
-  if(type === "general"){
+  // FIXED OUTPUT
+  if(type === "maxtime"){
     document.getElementById("result").innerText =
-      ok ? `All nodes activated in ${time} steps ⏱️` :
+      ok ? `Activated in ${time} steps ⏱️` :
            "Not fully activated ❌";
   } else {
     document.getElementById("result").innerText =
