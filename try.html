@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Try Yourself</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+
+<h2 id="title"></h2>
+
+<svg id="graph" width="700" height="450"></svg>
+
+<div>
+  <button onclick="check()">Submit</button>
+  <button onclick="reset()">Reset</button>
+</div>
+
+<p id="result"></p>
+
+<script>
+
+let params = new URLSearchParams(window.location.search);
+let type = params.get("type");
+
+let nodes = [];
+let links = [];
+
+// ---------- TITLE ----------
+document.getElementById("title").innerText =
+  type === "complete" ? "Complete Graph" :
+  type === "tree" ? "Tree Graph" :
+  "General Graph (Max Activation Time)";
+
+// ---------- CREATE GRAPH ----------
+let n = 6;
+
+for(let i=0;i<n;i++){
+  nodes.push({
+    id:i,
+    x:Math.random()*600+50,
+    y:Math.random()*350+50,
+    t: Math.floor(Math.random()*2)+1,
+    w: Math.floor(Math.random()*9)+1,
+    active:false
+  });
+}
+
+// ---------- GRAPH TYPES ----------
+if(type === "complete"){
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      links.push({source:i,target:j});
+    }
+  }
+}
+else if(type === "tree"){
+  for(let i=1;i<n;i++){
+    links.push({source:i,target:Math.floor(Math.random()*i)});
+  }
+}
+else{
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      if(Math.random()<0.4){
+        links.push({source:i,target:j});
+      }
+    }
+  }
+}
+
+// ---------- DRAW ----------
+let svg = d3.select("#graph");
+
+svg.selectAll("line")
+  .data(links)
+  .enter()
+  .append("line")
+  .attr("x1", d=>nodes[d.source].x)
+  .attr("y1", d=>nodes[d.source].y)
+  .attr("x2", d=>nodes[d.target].x)
+  .attr("y2", d=>nodes[d.target].y)
+  .attr("stroke","#999");
+
+// NODES
+let circles = svg.selectAll("circle")
+  .data(nodes)
+  .enter()
+  .append("circle")
+  .attr("cx", d=>d.x)
+  .attr("cy", d=>d.y)
+  .attr("r", 20)
+  .attr("class","inactive")
+  .on("click", function(event,d){
+    d.active = !d.active;
+    d3.select(this).classed("active", d.active);
+  });
+
+// LABELS (FIXED PROPERLY)
+svg.selectAll("text")
+  .data(nodes)
+  .enter()
+  .append("text")
+  .attr("text-anchor","middle")
+  .each(function(d){
+    let t = d3.select(this);
+
+    t.append("tspan")
+      .attr("x", d.x)
+      .attr("y", d.y - 5)
+      .text(d.id);
+
+    if(type === "general"){
+      t.append("tspan")
+        .attr("x", d.x)
+        .attr("y", d.y + 10)
+        .text(`t=${d.t}`);
+    } else {
+      t.append("tspan")
+        .attr("x", d.x)
+        .attr("y", d.y + 10)
+        .text(`t=${d.t}, w=${d.w}`);
+    }
+  });
+
+// ---------- ACTIVATION ----------
+function check(){
+
+  let changed = true;
+
+  while(changed){
+    changed = false;
+
+    nodes.forEach(n=>{
+      if(n.active) return;
+
+      let count = 0;
+
+      links.forEach(l=>{
+        if(l.source===n.id && nodes[l.target].active) count++;
+        if(l.target===n.id && nodes[l.source].active) count++;
+      });
+
+      if(count >= n.t){
+        n.active = true;
+        changed = true;
+      }
+    });
+  }
+
+  d3.selectAll("circle")
+    .classed("active", d=>d.active);
+
+  let ok = nodes.every(n=>n.active);
+
+  document.getElementById("result").innerText =
+    ok ? "All nodes activated ✅" : "Not fully activated ❌";
+}
+
+// ---------- RESET ----------
+function reset(){
+  location.reload();
+}
+
+</script>
+
+</body>
+</html>

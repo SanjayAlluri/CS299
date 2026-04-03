@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TSS Interactive</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Target Set Selection Visualizer</h1>
+
+<div class="container">
+  <button onclick="go('complete')">WTSS on Complete Graph</button>
+  <button onclick="go('tree')">WTSS on Trees</button>
+  <button onclick="go('general')">Max Activation Time</button>
+</div>
+
+<script>
+function go(type){
+  window.location.href = "try.html?type=" + type;
+}
+</script>
+
+</body>
+</html>
