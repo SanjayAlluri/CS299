@@ -1,23 +1,212 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TSS Interactive</title>
+  <title>TSS Visualizer</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
 
 <h1>Target Set Selection Visualizer</h1>
 
 <div class="container">
-  <button onclick="go('complete')">WTSS on Complete Graph</button>
-  <button onclick="go('tree')">WTSS on Trees</button>
-  <button onclick="go('general')">Max Activation Time</button>
+  <button onclick="start('complete')">WTSS Complete Graph</button>
+  <button onclick="start('tree')">WTSS Tree</button>
+  <button onclick="start('maxtime')">Max Activation Time (Tree)</button>
 </div>
 
+<h2 id="title"></h2>
+
+<p>Gray = Inactive | Blue = Selected | Green = Activated</p>
+
+<svg id="graph" width="700" height="450"></svg>
+
+<div>
+  <button onclick="check()">Submit</button>
+  <button onclick="reset()">Reset</button>
+</div>
+
+<p id="result"></p>
+
 <script>
-function go(type){
-  window.location.href = "try.html?type=" + type;
+
+let mode = null;
+let nodes = [];
+let links = [];
+
+// ---------- START ----------
+function start(type){
+  mode = type;
+  document.getElementById("result").innerText = "";
+
+  document.getElementById("title").innerText =
+    type === "complete" ? "Complete Graph (WTSS)" :
+    type === "tree" ? "Tree (WTSS)" :
+    "Max Activation Time (Tree)";
+
+  generateGraph();
 }
+
+// ---------- GRAPH ----------
+function generateGraph(){
+
+  nodes = [];
+  links = [];
+  let n = 6;
+
+  for(let i=0;i<n;i++){
+    nodes.push({
+      id:i,
+      x:Math.random()*600+50,
+      y:Math.random()*350+50,
+      t:1,
+      w: Math.floor(Math.random()*9)+1,
+      active:false,
+      selected:false
+    });
+  }
+
+  if(mode === "complete"){
+    for(let i=0;i<n;i++){
+      for(let j=i+1;j<n;j++){
+        links.push({source:i,target:j});
+      }
+    }
+
+    nodes.forEach(node=>{
+      let deg = n-1;
+      node.t = Math.floor(Math.random()*deg)+1;
+    });
+  }
+
+  else{
+    for(let i=1;i<n;i++){
+      links.push({source:i,target:Math.floor(Math.random()*i)});
+    }
+
+    nodes.forEach(node=>{
+      let deg = links.filter(l=>l.source===node.id || l.target===node.id).length;
+      node.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
+    });
+  }
+
+  draw();
+}
+
+// ---------- DRAW ----------
+function draw(){
+
+  let svg = d3.select("#graph");
+  svg.selectAll("*").remove();
+
+  svg.selectAll("line")
+    .data(links)
+    .enter()
+    .append("line")
+    .attr("x1", d=>nodes[d.source].x)
+    .attr("y1", d=>nodes[d.source].y)
+    .attr("x2", d=>nodes[d.target].x)
+    .attr("y2", d=>nodes[d.target].y)
+    .attr("stroke","#999");
+
+  svg.selectAll("circle")
+    .data(nodes)
+    .enter()
+    .append("circle")
+    .attr("cx", d=>d.x)
+    .attr("cy", d=>d.y)
+    .attr("r", 22)
+    .attr("fill","lightgray")
+    .on("click", function(event,d){
+      d.selected = !d.selected;
+      d.active = d.selected;
+      d3.select(this)
+        .attr("fill", d.selected ? "#1f77b4" : "lightgray");
+    });
+
+  svg.selectAll("text")
+    .data(nodes)
+    .enter()
+    .append("text")
+    .attr("text-anchor","middle")
+    .style("pointer-events","none")
+    .each(function(d){
+      let t = d3.select(this);
+
+      t.append("tspan")
+        .attr("x", d.x)
+        .attr("y", d.y - 5)
+        .text(d.id);
+
+      t.append("tspan")
+        .attr("x", d.x)
+        .attr("y", d.y + 10)
+        .text(`t=${d.t}${mode !== "maxtime" ? ", w="+d.w : ""}`);
+    });
+}
+
+// ---------- ACTIVATION ----------
+function check(){
+
+  let time = 0;
+  let changed = true;
+
+  while(changed){
+    changed = false;
+    let newNodes = [];
+
+    nodes.forEach(node=>{
+      if(node.active) return;
+
+      let count = 0;
+
+      links.forEach(l=>{
+        if(l.source===node.id && nodes[l.target].active) count++;
+        if(l.target===node.id && nodes[l.source].active) count++;
+      });
+
+      if(count >= node.t){
+        newNodes.push(node);
+      }
+    });
+
+    if(newNodes.length > 0){
+      newNodes.forEach(n=>n.active = true);
+      changed = true;
+      time++;
+    }
+  }
+
+  d3.selectAll("circle")
+    .attr("fill", d=>{
+      if(d.active) return "green";
+      if(d.selected) return "#1f77b4";
+      return "lightgray";
+    });
+
+  let ok = nodes.every(n=>n.active);
+
+  if(mode === "maxtime"){
+    document.getElementById("result").innerText =
+      ok ? "Activated in " + time + " steps ⏱️"
+         : "Not fully activated ❌";
+  }
+  else{
+    document.getElementById("result").innerText =
+      ok ? "All nodes activated ✅"
+         : "Not fully activated ❌";
+  }
+}
+
+// ---------- RESET ----------
+function reset(){
+  nodes = [];
+  links = [];
+  d3.select("#graph").selectAll("*").remove();
+  document.getElementById("result").innerText = "";
+  document.getElementById("title").innerText = "";
+}
+
 </script>
 
 </body>
