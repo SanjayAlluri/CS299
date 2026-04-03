@@ -34,7 +34,7 @@ document.getElementById("title").innerText =
   type === "tree" ? "Tree Graph" :
   "General Graph (Max Activation Time)";
 
-// CREATE GRAPH
+// CREATE NODES
 let n = 6;
 
 for(let i=0;i<n;i++){
@@ -42,26 +42,39 @@ for(let i=0;i<n;i++){
     id:i,
     x:Math.random()*600+50,
     y:Math.random()*350+50,
-    t: Math.floor(Math.random()*2)+1,
+    t: 1,
     w: Math.floor(Math.random()*9)+1,
     active:false,
     selected:false
   });
 }
 
-// GRAPH TYPES
+// CREATE GRAPH
 if(type === "complete"){
   for(let i=0;i<n;i++){
     for(let j=i+1;j<n;j++){
       links.push({source:i,target:j});
     }
   }
+
+  // threshold ≤ degree (n-1)
+  nodes.forEach(n => {
+    n.t = Math.floor(Math.random()*(n-1))+1;
+  });
 }
+
 else if(type === "tree"){
   for(let i=1;i<n;i++){
     links.push({source:i,target:Math.floor(Math.random()*i)});
   }
+
+  // compute degree & enforce threshold
+  nodes.forEach(n => {
+    let deg = links.filter(l => l.source===n.id || l.target===n.id).length;
+    n.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
+  });
 }
+
 else{
   for(let i=0;i<n;i++){
     for(let j=i+1;j<n;j++){
@@ -70,6 +83,11 @@ else{
       }
     }
   }
+
+  nodes.forEach(n => {
+    let deg = links.filter(l => l.source===n.id || l.target===n.id).length;
+    n.t = Math.max(1, Math.floor(Math.random()*(deg+1)));
+  });
 }
 
 // DRAW
@@ -86,7 +104,7 @@ svg.selectAll("line")
   .attr("y2", d=>nodes[d.target].y)
   .attr("stroke","#999");
 
-// NODES (FIXED COLORS)
+// NODES
 svg.selectAll("circle")
   .data(nodes)
   .enter()
@@ -104,7 +122,7 @@ svg.selectAll("circle")
       .attr("fill", d.selected ? "#1f77b4" : "lightgray");
   });
 
-// LABELS (CLICK SAFE)
+// LABELS
 svg.selectAll("text")
   .data(nodes)
   .enter()
@@ -135,10 +153,12 @@ svg.selectAll("text")
 // ACTIVATION
 function check(){
 
+  let time = 0;
   let changed = true;
 
   while(changed){
     changed = false;
+    let newNodes = [];
 
     nodes.forEach(n=>{
       if(n.active) return;
@@ -151,10 +171,15 @@ function check(){
       });
 
       if(count >= n.t){
-        n.active = true;
-        changed = true;
+        newNodes.push(n);
       }
     });
+
+    if(newNodes.length > 0){
+      newNodes.forEach(n => n.active = true);
+      changed = true;
+      time++;
+    }
   }
 
   // UPDATE COLORS
@@ -167,8 +192,15 @@ function check(){
 
   let ok = nodes.every(n=>n.active);
 
-  document.getElementById("result").innerText =
-    ok ? "All nodes activated ✅" : "Not fully activated ❌";
+  if(type === "general"){
+    document.getElementById("result").innerText =
+      ok ? `All nodes activated in ${time} steps ⏱️` :
+           "Not fully activated ❌";
+  } else {
+    document.getElementById("result").innerText =
+      ok ? "All nodes activated ✅" :
+           "Not fully activated ❌";
+  }
 }
 
 // RESET
