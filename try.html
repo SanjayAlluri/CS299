@@ -82,26 +82,27 @@ svg.selectAll("line")
   .attr("y2", d=>nodes[d.target].y)
   .attr("stroke","#999");
 
-// NODES
-let circles = svg.selectAll("circle")
+// ---------- NODES ----------
+svg.selectAll("circle")
   .data(nodes)
   .enter()
   .append("circle")
   .attr("cx", d=>d.x)
   .attr("cy", d=>d.y)
-  .attr("r", 20)
+  .attr("r", 22)
   .attr("class","inactive")
   .on("click", function(event,d){
     d.active = !d.active;
     d3.select(this).classed("active", d.active);
   });
 
-// LABELS (FIXED PROPERLY)
+// ---------- LABELS (FIX APPLIED HERE) ----------
 svg.selectAll("text")
   .data(nodes)
   .enter()
   .append("text")
   .attr("text-anchor","middle")
+  .style("pointer-events", "none")   // 🔥 FIX: allows clicks to pass through
   .each(function(d){
     let t = d3.select(this);
 
