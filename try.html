@@ -75,6 +75,7 @@ else{
 // DRAW
 let svg = d3.select("#graph");
 
+// EDGES
 svg.selectAll("line")
   .data(links)
   .enter()
@@ -85,7 +86,7 @@ svg.selectAll("line")
   .attr("y2", d=>nodes[d.target].y)
   .attr("stroke","#999");
 
-// NODES
+// NODES (FIXED COLORS)
 svg.selectAll("circle")
   .data(nodes)
   .enter()
@@ -93,24 +94,23 @@ svg.selectAll("circle")
   .attr("cx", d=>d.x)
   .attr("cy", d=>d.y)
   .attr("r", 22)
-  .attr("class","inactive")
+  .attr("fill", "lightgray")
   .on("click", function(event,d){
 
     d.selected = !d.selected;
     d.active = d.selected;
 
     d3.select(this)
-      .classed("selected", d.selected)
-      .classed("active", false);
+      .attr("fill", d.selected ? "#1f77b4" : "lightgray");
   });
 
-// LABELS (FIXED CLICK ISSUE)
+// LABELS (CLICK SAFE)
 svg.selectAll("text")
   .data(nodes)
   .enter()
   .append("text")
   .attr("text-anchor","middle")
-  .style("pointer-events", "none")
+  .style("pointer-events","none")
   .each(function(d){
     let t = d3.select(this);
 
@@ -157,9 +157,13 @@ function check(){
     });
   }
 
+  // UPDATE COLORS
   d3.selectAll("circle")
-    .classed("active", d=>d.active)
-    .classed("selected", d=>d.selected && !d.active);
+    .attr("fill", d => {
+      if(d.active) return "green";
+      if(d.selected) return "#1f77b4";
+      return "lightgray";
+    });
 
   let ok = nodes.every(n=>n.active);
 
