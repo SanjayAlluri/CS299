@@ -24,8 +24,13 @@
 
 // ---------- GET TYPE ----------
 let params = new URLSearchParams(window.location.search);
-let type = params.get("type");
-console.log("TYPE =", type); // DEBUG
+let type = params.get("type") || "complete";
+
+// 🔥 BULLETPROOF FLAG
+let isMaxTime = (type === "maxtime");
+
+console.log("TYPE =", type);
+console.log("isMaxTime =", isMaxTime);
 
 let nodes = [];
 let links = [];
@@ -67,7 +72,7 @@ if(type === "complete"){
   });
 }
 
-// TREE (used for both tree + maxtime)
+// TREE (for WTSS + MaxTime)
 else{
   for(let i=1;i<nodes.length;i++){
     links.push({source:i,target:Math.floor(Math.random()*i)});
@@ -128,7 +133,7 @@ svg.selectAll("text")
     t.append("tspan")
       .attr("x", d.x)
       .attr("y", d.y + 10)
-      .text(`t=${d.t}${type !== "maxtime" ? ", w="+d.w : ""}`);
+      .text(`t=${d.t}${!isMaxTime ? ", w="+d.w : ""}`);
   });
 
 // ---------- ACTIVATION ----------
@@ -173,14 +178,15 @@ function check(){
 
   let ok = nodes.every(node=>node.active);
 
-  // ✅ FIXED RESULT DISPLAY
+  // ✅ FINAL RESULT LOGIC (FIXED)
   let resultText = "";
 
-  if(type === "maxtime"){
+  if(isMaxTime){
     resultText = ok
       ? "Activated in " + time + " steps ⏱️"
       : "Not fully activated ❌";
-  } else {
+  }
+  else{
     resultText = ok
       ? "All nodes activated ✅"
       : "Not fully activated ❌";
